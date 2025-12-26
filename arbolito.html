@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="main.css" />
+    <link rel="icon" href="img/flowers.png" type="image/x-icon" />
+    <title>Arbolito</title>
+    <style>
+      body {
+        background: radial-gradient(circle at center, #1a1a2e 0%, #000000 100%);
+        margin: 0;
+        overflow: hidden;
+        height: 100vh;
+        color: #fff;
+      }
+      canvas {
+        display: block;
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: -1;
+      }
+      .titulo {
+        position: relative;
+        z-index: 10;
+        text-shadow: 0 0 10px #ff0000, 0 0 20px #00ff00;
+        text-align: center;
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+  <body class="container">
+    <audio src="Rebecca-Sugar-It_s-Our-Special-Time-Of-Year-Sub.-Español-Amphibia.mp3" autoplay></audio>
+    <div id="lyrics">
+     
+    </div>
+    <h1 class="titulo">no es mucho pero honestamente, queria darte algo con espiritu navideño
+      <p>Te amo con cada parte de mi corazon.
+    </h1>
+  
+    <canvas id="lienzo"></canvas>
+    <script>
+        const canvas = document.getElementById('lienzo');
+        const ctx = canvas.getContext('2d');
+
+        let width, height;
+        const copos = [];
+        const luces = [];
+        const hojas = [];
+        const numCopos = 150;
+        const numLuces = 50;
+
+        function redimensionar() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+            generarHojas();
+            generarLuces();
+        }
+
+        class CopoNieve {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.velocidadY = Math.random() * 1.5 + 0.5;
+                this.radio = Math.random() * 2 + 1;
+                this.opacidad = Math.random();
+            }
+            actualizar() {
+                this.y += this.velocidadY;
+                if (this.y > height) {
+                    this.y = -10;
+                    this.x = Math.random() * width;
+                }
+            }
+            dibujar() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radio, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 255, 255, ${this.opacidad})`;
+                ctx.fill();
+            }
+        }
+
+        function generarHojas() {
+            hojas.length = 0;
+            const alturaArbol = Math.min(height * 0.6, 500);
+            const capas = 12;
+            const alturaCapa = alturaArbol / capas;
+
+            for (let i = 0; i < capas; i++) {
+                const ratio = i / capas;
+                const anchoBase = (1 - ratio) * 140;
+                const numHojasCapa = 100 + Math.floor((1 - ratio) * 100);
+
+                for (let j = 0; j < numHojasCapa; j++) {
+                    const r1 = Math.random();
+                    const r2 = Math.random();
+                    const s = Math.sqrt(r1);
+
+                    // Coordenadas en triángulo relativo
+                    const xRel = (1 - s) * 0 + s * (1 - r2) * (-anchoBase) + s * r2 * (anchoBase);
+                    const yRel = (1 - s) * (-alturaCapa * 1.5);
+
+                    hojas.push({
+                        layerIndex: i,
+                        ratio: ratio,
+                        xRel: xRel,
+                        yRel: yRel,
+                        yBaseCapaOffset: -(i * alturaCapa * 0.9), // Offset from baseY
+                        size: 3 + Math.random() * 4,
+                        color: `hsl(${100 + Math.random() * 40}, ${40 + Math.random() * 40}%, ${15 + Math.random() * 25}%)`,
+                        rotation: Math.random() * Math.PI,
+                        phase: Math.random() * Math.PI * 2,
+                        speed: 0.002 + Math.random() * 0.004
+                    });
+                }
+            }
+        }
+
+        function generarLuces() {
+            luces.length = 0;
+            const centroX = width / 2;
+            const baseY = height - 150;
+            const alturaArbol = Math.min(height * 0.6, 500);
+
+            for (let i = 0; i < numLuces; i++) {
+                // Generar posición aleatoria dentro de un triángulo aproximado
+                const ratioY = Math.random(); // 0 es abajo, 1 es arriba
+                const y = baseY - (ratioY * alturaArbol);
+                const anchoMaximoEnY = (1 - ratioY) * 140; // Ancho del árbol en esa altura
+                const x = centroX + (Math.random() - 0.5) * 2 * anchoMaximoEnY;
+
+                luces.push({
+                    x: x,
+                    y: y,
+                    ratioY: ratioY,
+                    offsetX: x - centroX,
+                    color: `hsl(${Math.random() * 360}, 100%, 50%)`,
+                    velocidadParpadeo: Math.random() * 0.05 + 0.02,
+                    offset: Math.random() * Math.PI * 2
+                });
+            }
+        }
+
+        function dibujarEstrella(cx, cy, spikes, outerRadius, innerRadius) {
+            let rot = Math.PI / 2 * 3;
+            let x = cx;
+            let y = cy;
+            let step = Math.PI / spikes;
+
+            ctx.beginPath();
+            ctx.moveTo(cx, cy - outerRadius);
+            for (let i = 0; i < spikes; i++) {
+                x = cx + Math.cos(rot) * outerRadius;
+                y = cy + Math.sin(rot) * outerRadius;
+                ctx.lineTo(x, y);
+                rot += step;
+
+                x = cx + Math.cos(rot) * innerRadius;
+                y = cy + Math.sin(rot) * innerRadius;
+                ctx.lineTo(x, y);
+                rot += step;
+            }
+            ctx.lineTo(cx, cy - outerRadius);
+            ctx.closePath();
+            ctx.fillStyle = '#FFD700';
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = "#FFD700";
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
+
+        function dibujarArbol(tiempo) {
+            const centroX = width / 2;
+            const baseY = height - 150;
+            const alturaArbol = Math.min(height * 0.6, 500);
+
+            // Sombra del árbol en el suelo
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.beginPath();
+            ctx.ellipse(centroX, baseY + 35, 70, 15, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Tronco
+            const gradTronco = ctx.createLinearGradient(centroX - 15, baseY, centroX + 15, baseY);
+            gradTronco.addColorStop(0, '#2d1a10');
+            gradTronco.addColorStop(0.2, '#3e2718');
+            gradTronco.addColorStop(0.5, '#5c3a21');
+            gradTronco.addColorStop(0.8, '#3e2718');
+            gradTronco.addColorStop(1, '#2d1a10');
+            ctx.fillStyle = gradTronco;
+            ctx.fillRect(centroX - 15, baseY, 30, 40);
+
+            // Hojas (Capas con degradado y curvas para realismo)
+            const capas = 12;
+            const alturaCapa = alturaArbol / capas;
+
+            // Dibujar hojas individuales
+            hojas.forEach(hoja => {
+                const swayBase = Math.sin(tiempo * 0.002 + hoja.ratio * 3) * (hoja.ratio * 20);
+                const swayLeaf = Math.sin(tiempo * hoja.speed + hoja.phase) * 3;
+                
+                const x = centroX + hoja.xRel + swayBase + swayLeaf;
+                const y = baseY + hoja.yBaseCapaOffset + hoja.yRel;
+                
+                ctx.beginPath();
+                // Usar elipses para simular hojas/agujas
+                ctx.ellipse(x, y, hoja.size, hoja.size * 0.6, hoja.rotation, 0, Math.PI * 2);
+                ctx.fillStyle = hoja.color;
+                ctx.fill();
+            });
+
+            // Estrella
+            const swayPunta = Math.sin(tiempo * 0.002 + 1 * 3) * 20;
+            const yPunta = baseY - ((capas - 1) * alturaCapa * 0.9) - alturaCapa * 1.5;
+            dibujarEstrella(centroX + swayPunta, yPunta + 10, 5, 20, 10);
+        }
+
+        function animar(tiempo) {
+            ctx.clearRect(0, 0, width, height);
+
+            // Dibujar nieve
+            copos.forEach(copo => { copo.actualizar(); copo.dibujar(); });
+
+            dibujarArbol(tiempo);
+
+            // Dibujar luces
+            luces.forEach(luz => {
+                const sway = Math.sin(tiempo * 0.002 + luz.ratioY * 3) * (luz.ratioY * 20);
+                const x = (width / 2) + luz.offsetX + sway;
+
+                ctx.beginPath();
+                ctx.arc(x, luz.y, 4, 0, Math.PI * 2);
+                const alpha = (Math.sin(tiempo * luz.velocidadParpadeo + luz.offset) + 1) / 2;
+                
+                const grad = ctx.createRadialGradient(x, luz.y, 0, x, luz.y, 4);
+                grad.addColorStop(0, '#fff');
+                grad.addColorStop(0.5, luz.color);
+                grad.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = grad;
+                
+                ctx.globalAlpha = alpha;
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+            });
+
+            requestAnimationFrame(animar);
+        }
+
+        // Inicialización
+        window.addEventListener('resize', redimensionar);
+        redimensionar();
+        
+        for(let i=0; i<numCopos; i++) copos.push(new CopoNieve());
+        
+        requestAnimationFrame(animar);
+    </script>
+    <script src="anim.js"></script>
+    <script src="main.js"></script>
+  </body>
+</html>
